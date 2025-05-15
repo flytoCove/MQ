@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:./data/meta.db
+    username:     # SQLite并不需要用户名和密码
+    password:
+    driver-class-name: org.sqlite.JDBC
+
+mybatis:
+  configuration:
+    # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath:mapper/**Mapper.xml
+
