@@ -18,7 +18,7 @@ public class Message implements Serializable {
 
     // 用于消息持久化到文件中时查找的偏移量 [offsetBeg, offsetEnd)
     // 文件起始位置距离消息起始位置的偏移量（字节）
-    // 不需要序列化 transient
+    // 不需要序列化 (transient)
     private transient long offsetBeg;
     // 文件起始位置距离消息结束位置的偏移量（字节）
     private transient long offsetEnd;
