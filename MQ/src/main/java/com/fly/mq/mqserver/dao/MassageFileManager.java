@@ -183,14 +183,14 @@ public class MassageFileManager {
                 diskMessage.setIsValid((byte) 0x0);
 
                 // 4.重新写入文件
-                byte[] destBuffer = new byte[(int) (message.getOffsetEnd() - message.getOffsetBeg())];
+                byte[] destBuffer = BinaryTool.toBytes(diskMessage);
                 raf.seek(message.getOffsetBeg());
-                raf.read(destBuffer);
+                raf.write(destBuffer);
             }
 
             Stat stat = readStat(queue.getName());
-            if (stat.totalCount > 0) {
-                stat.totalCount--;
+            if (stat.validCount > 0) {
+                stat.validCount--;
             }
             writeStat(queue.getName(), stat);
         }
