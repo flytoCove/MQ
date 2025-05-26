@@ -2,8 +2,7 @@ package com.fly.mq;
 
 import com.fly.mq.mqserver.core.MSGQueue;
 import com.fly.mq.mqserver.core.Message;
-import com.fly.mq.mqserver.dao.MassageFileManager;
-import net.bytebuddy.dynamic.scaffold.MethodGraph;
+import com.fly.mq.mqserver.dao.MessageFileManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +17,7 @@ import java.util.List;
 
 @SpringBootTest
 public class MessageFileManagerTests {
-    MassageFileManager massageFileManager = new MassageFileManager();
+    MessageFileManager massageFileManager = new MessageFileManager();
     // 方法执行前的准备工作
     private static final String queueName1 = "testQueue1";
     private static final String queueName2 = "testQueue2";
@@ -56,7 +55,7 @@ public class MessageFileManagerTests {
     // 测试读写统计
     @Test
     public void testReadWriteStat() throws IOException {
-        MassageFileManager.Stat stat = new MassageFileManager.Stat();
+        MessageFileManager.Stat stat = new MessageFileManager.Stat();
         stat.totalCount = 100;
         stat.validCount = 50;
 
@@ -64,7 +63,7 @@ public class MessageFileManagerTests {
         // 使用 spring 封装好的反射工具类
         ReflectionTestUtils.invokeMethod(massageFileManager, "writeStat",queueName1, stat);
         // 写入完毕在调用读取验证数据是否一致
-        MassageFileManager.Stat newStat = ReflectionTestUtils.invokeMethod(massageFileManager, "readStat",queueName1);
+        MessageFileManager.Stat newStat = ReflectionTestUtils.invokeMethod(massageFileManager, "readStat",queueName1);
 
         assert newStat != null;
         Assertions.assertEquals(100, newStat.totalCount);
@@ -93,7 +92,7 @@ public class MessageFileManagerTests {
 
         massageFileManager.sendMessage(queue, message);
         // 检查 stat 文件
-        MassageFileManager.Stat stat = ReflectionTestUtils.invokeMethod(massageFileManager, "readStat",queue.getName());
+        MessageFileManager.Stat stat = ReflectionTestUtils.invokeMethod(massageFileManager, "readStat",queue.getName());
         Assertions.assertEquals(1, stat.totalCount);
         Assertions.assertEquals(1, stat.validCount);
 
@@ -156,7 +155,7 @@ public class MessageFileManagerTests {
         LinkedList<Message> actualMessages = massageFileManager.loadAllMessageFromQueue(queueName1);
         Assertions.assertEquals(7, actualMessages.size());
 
-        MassageFileManager.Stat stat = ReflectionTestUtils.invokeMethod(massageFileManager, "readStat",queue.getName());
+        MessageFileManager.Stat stat = ReflectionTestUtils.invokeMethod(massageFileManager, "readStat",queue.getName());
         Assertions.assertEquals(10, stat.totalCount);
         Assertions.assertEquals(7, stat.validCount);
 

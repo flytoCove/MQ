@@ -74,12 +74,12 @@ public class MemoryDataManager {
     }
 
     // 根据 exchangeName 和 queueName 获取唯一的一个绑定
-    public Binding getBinding(String queueName, String exchangeName) {
+    public Binding getBinding(String exchangeName, String queueName) {
         ConcurrentHashMap<String, Binding> bindingMap = bindingsMap.get(exchangeName);
-        if (bindingMap.containsKey(queueName)) {
-            return bindingMap.get(queueName);
+        if (bindingMap == null) {
+            return null;
         }
-        return null;
+        return bindingMap.get(queueName);
     }
     // 根据 exchangeName 获取 所有绑定
     public ConcurrentHashMap<String, Binding> getBindings(String exchangeName) {
@@ -100,10 +100,13 @@ public class MemoryDataManager {
         messageMap.put(message.getMessageId(), message);
         System.out.println("[MemoryDataManager] add message: " + message.getMessageId());
     }
+
+    // 从消息中心查询指定消息
     public Message getMessage(String messageId) {
         return messageMap.get(messageId);
     }
-    public void deleteMessage(String messageId) {
+    // 从消息中心删除指定消息
+    public void removeMessage(String messageId) {
         messageMap.remove(messageId);
         System.out.println("[MemoryDataManager] delete message: " + messageId);
     }
@@ -162,7 +165,7 @@ public class MemoryDataManager {
     }
 
     // 删除未确认消息
-    public void deleteMessageWaitAck(String queueName, String messageId) {
+    public void removeMessageWaitAck(String queueName, String messageId) {
         ConcurrentHashMap<String, Message> messageMap = queueMessageWaitAckMap.get(queueName);
         if(messageMap == null) {
             return ;
@@ -196,7 +199,7 @@ public class MemoryDataManager {
         exchanges.forEach(exchange -> {
             exchangeMap.put(exchange.getName(), exchange);
         });
-        // 2.恢复所有的绑定数据
+        // 2.恢复所有的队列数据
         List<MSGQueue> queues = diskDataCenter.getAllQueues();
         queues.forEach(queue -> {
             queueMap.put(queue.getName(), queue);

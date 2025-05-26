@@ -14,7 +14,7 @@ import java.util.Scanner;
  * 针对消息管理
  */
 @Slf4j
-public class MassageFileManager {
+public class MessageFileManager {
 
     // 用来描述该队列消息的统计信息
     static public class Stat {
