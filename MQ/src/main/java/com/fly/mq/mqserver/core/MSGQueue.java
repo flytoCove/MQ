@@ -61,6 +61,10 @@ public class MSGQueue {
         }
     }
 
+    public void setArguments(Map<String, Object> arguments) {
+        this.arguments = arguments;
+    }
+
     // 这里方便代码内部使用和测试
     public Object getArguments(String key) {
         return arguments.get(key);

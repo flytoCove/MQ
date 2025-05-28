@@ -186,7 +186,7 @@ public class MemoryDataManager {
     /**
      * 从硬盘上读取数据（将硬盘上持久化存储的数据恢复到内存中）
      */
-    public void recovery(DiskDataCenter diskDataCenter) throws IOException, ClassNotFoundException {
+    public void recovery(DiskDataManager diskDataCenter) throws IOException, ClassNotFoundException {
         // 清空之前的数据
         exchangeMap.clear();
         queueMap.clear();

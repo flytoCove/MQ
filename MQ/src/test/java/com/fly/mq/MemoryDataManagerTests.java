@@ -1,7 +1,7 @@
 package com.fly.mq;
 
 import com.fly.mq.mqserver.core.*;
-import com.fly.mq.mqserver.dao.DiskDataCenter;
+import com.fly.mq.mqserver.dao.DiskDataManager;
 import com.fly.mq.mqserver.dao.MemoryDataManager;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -167,7 +167,7 @@ public class MemoryDataManagerTests {
         // 后续数据库操作依赖 MyBatis 需要启动 SpringApplication
         MqApplication.context = SpringApplication.run(MqApplication.class);
         // 1.在硬盘上构造数据
-        DiskDataCenter diskDataCenter = new DiskDataCenter();
+        DiskDataManager diskDataCenter = new DiskDataManager();
         diskDataCenter.init();
 
         // 构造交换机

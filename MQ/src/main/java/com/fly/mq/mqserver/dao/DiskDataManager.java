@@ -14,7 +14,7 @@ import java.util.List;
  * 数据库：交换机，队列，绑定
  * 数据文件：消息
  */
-public class DiskDataCenter {
+public class DiskDataManager {
     // 数据库
     private MessageFileManager messageFileManager = new MessageFileManager();
     // 数据文件
