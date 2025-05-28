@@ -94,7 +94,59 @@ public class Router {
         }
     }
     public static boolean routTopic(Binding binding, Message message) throws MQException {
+        // 先切分两个 key
+        String[] bindingTokens = binding.getBindingKey().split("\\.");
+        String[] routingTokens = message.getRoutingKey().split("\\.");
+        // 将两个下标封分别指向 tokens 起始位置
+        int bindingIndex = 0, routingIndex = 0;
+        while(bindingIndex < bindingTokens.length && routingIndex < routingTokens.length){
+            // 如果是 * 则直接跳过这个位置进行下一个位置的匹配
+            if(bindingTokens[bindingIndex].equals("*")){
+                bindingIndex++;
+                routingIndex++;
+                continue;
+            }
 
-        return true;
+            // 如果是 # 判断一下是不是最后一个位置 如果是最后一个则一定是匹配成功的
+            // #.ccc                aaa.bbb.ccc         true
+            else if(bindingTokens[bindingIndex].equals("#")){
+                bindingIndex++;
+                if(bindingIndex == bindingTokens.length){
+                    return true;
+                }
+
+                // # 后面如果还有 则拿着这个内容去 routingTokens 中往后找 找到对应的位置
+                // findNextMatch 用来查找 bindingTokens[bindingIndex] 这部分在 routingTokens 中对应的位置 返回对应的下标
+                // 如果没找到 返回 -1
+                routingIndex = findNextMatch(routingTokens,routingIndex,bindingTokens[bindingIndex]);
+                if(routingIndex == -1){
+                    return false;
+                }
+
+                // 如果找到则继续往下匹配
+                bindingIndex++;
+                routingIndex++;
+            }
+            else{
+                // 如果是普通字符 要求完全相等 否则匹配失败
+                if(!bindingTokens[bindingIndex].equals(routingTokens[routingIndex])){
+                    return false;
+                }
+                bindingIndex++;
+                routingIndex++;
+            }
+        }
+        // 判断双方是否同时到达末尾
+        return bindingIndex == bindingTokens.length && routingIndex == routingTokens.length;
     }
+
+    private static int findNextMatch(String[] routingTokens, int routingIndex, String bindingToken) {
+        for(int i = routingIndex; i < routingTokens.length; i++){
+            if(routingTokens[i].equals(bindingToken)){
+                return i;
+            }
+        }
+        return -1;
+    }
+
 }
