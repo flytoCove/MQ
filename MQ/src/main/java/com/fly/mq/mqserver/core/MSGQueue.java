@@ -5,12 +5,16 @@ package com.fly.mq.mqserver.core;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fly.mq.common.ConsumerEnv;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 表示存储消的队列
@@ -36,9 +40,33 @@ public class MSGQueue {
     //表示创建交换机是指定的一些额外的选项
     private Map<String, Object> arguments = new HashMap<>();
 
+    // 表示当前队列都有那些消费者订阅了
+    private List<ConsumerEnv> consumerEnvList = new ArrayList<>();
+
+    // AtomicInteger 用于在多线程环境下进行原子操作的整数操作
+    // 记录当前取到了那个消费者方便实现轮询
+    private AtomicInteger consumerSeq = new AtomicInteger(0);
+
+    // 添加一个订阅者
+    public void addConsumerEnv(ConsumerEnv consumerEnv){
+        consumerEnvList.add(consumerEnv);
+    }
+
+    // 删除一个订阅者 TODO
+
+    // 选择一个订阅者处理当前的消息（轮询的方式）
+    public ConsumerEnv chooseConsumerEnv(){
+       if(consumerEnvList.isEmpty()){
+           return null;
+       }
+       // 记录当前元素的下标
+       int index = consumerSeq.get() % consumerEnvList.size();
+       consumerSeq.getAndIncrement();
+       return consumerEnvList.get(index);
+    }
+
 
     // 数据库存储不支持 Map 类型的数据 这里通过 get set 方法进行转换
-
     public String getArguments() {
         // 把当前的 arguments 参数从 Map 转换成 String(JSON)
         ObjectMapper mapper = new ObjectMapper();

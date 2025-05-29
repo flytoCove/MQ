@@ -1,12 +1,11 @@
 package com.fly.mq.mqserver;
 
+import com.fly.mq.common.Consumer;
 import com.fly.mq.common.MQException;
 import com.fly.mq.mqserver.core.*;
-import com.fly.mq.mqserver.dao.DataBaseManager;
 import com.fly.mq.mqserver.dao.DiskDataManager;
 import com.fly.mq.mqserver.dao.MemoryDataManager;
 import lombok.Getter;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +26,8 @@ public class VirtualHost {
     private final Object exchangeLocker = new Object();
     // 队列锁对象
     private final Object queueLocker = new Object();
+
+    private ConsumerManager consumerManager = new ConsumerManager(this);
 
     public VirtualHost(String name) {
         this.virtualHostName = name;
@@ -310,7 +311,7 @@ public class VirtualHost {
             return false;
         }
     }
-    public void sendMessage(MSGQueue queue, Message message) throws IOException {
+    public void sendMessage(MSGQueue queue, Message message) throws IOException, InterruptedException {
         // 将消息写入内存和硬盘上
         // deliverMode == 1 不持久化 2 持久化
         if(message.getDeliverMode() == 2){
@@ -320,6 +321,60 @@ public class VirtualHost {
         // 写入消息到内存
         memoryDataManager.sendMessage(queue,message);
 
-        // TODO 通知消费者消费消息
+        // 通知消费者消费消息
+        consumerManager.notifyConsume(queue.getName());
     }
+
+    // 订阅消息
+    // 添加一个队列的订阅者 当队列收到消息之后就要把消息推送给对应的订阅者
+    // consumerTag:消费者的身份表示
+    // autoAck:消息被消费完成后应答的方式 true 自动应答 false 手动应答
+    // Consumer 函数式接口
+    public boolean basicConsume(String consumerTag,String queueName,boolean autoAck, Consumer consumer) throws MQException {
+        // 构造一个 consumer 对象 找到对应的队列将这个 consumer 加进去
+        queueName = virtualHostName + queueName;
+        try{
+            consumerManager.addConsumer(consumerTag,queueName,autoAck,consumer);
+            System.out.println("[VirtualHost] Consumer added queueName = " + queueName);
+            return true;
+        } catch (RuntimeException e) {
+            System.out.println("[VirtualHost] Consumer add failed queueName = " + queueName);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean basicAck(String queueName, String messageId) throws MQException {
+        queueName = virtualHostName + queueName;
+        try{
+            // 1.获取到消息和队列
+            Message message = getMemoryDataManager().getMessage(messageId);
+            if(message == null) {
+                throw new MQException("[VirtualHost] Ack message id " + messageId + " does not exist");
+            }
+            MSGQueue queue = memoryDataManager.getQueue(queueName);
+            if(queue == null) {
+                throw new MQException("[VirtualHost] Ack message`s queue not exists " + queueName);
+            }
+
+            // 2. 删除硬盘上的数据
+            if(message.getDeliverMode() == 2){
+                diskDataManager.deleteMessage(queue,message);
+            }
+
+            // 3.删除消息中心的消息
+            memoryDataManager.removeMessage(messageId);
+
+            // 4.删除待确认消息集合的消息
+            memoryDataManager.removeMessageWaitAck(queueName,messageId);
+            System.out.println("[VirtualHost] basicAck success queueName = " + queueName + ", messageId = " + messageId);
+
+            return true;
+        }catch (Exception e){
+            System.out.println("[VirtualHost] basicAck failed queueName = " + queueName + ", messageId = " + messageId);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }

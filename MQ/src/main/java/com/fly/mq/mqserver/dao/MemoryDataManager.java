@@ -129,9 +129,9 @@ public class MemoryDataManager {
     }
 
     // 从指定队列取出消息
-    public Message pollMessage(String messageId) {
+    public Message pollMessage(String queueName) {
         // 根据队列名查找一下对应的消息链表
-        LinkedList<Message> messages = queueMessageMap.get(messageId);
+        LinkedList<Message> messages = queueMessageMap.get(queueName);
         if(messages == null) {
             return null;
         }
