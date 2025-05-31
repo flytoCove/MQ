@@ -311,7 +311,7 @@ public class VirtualHost {
             return false;
         }
     }
-    public void sendMessage(MSGQueue queue, Message message) throws IOException, InterruptedException {
+    private void sendMessage(MSGQueue queue, Message message) throws IOException, InterruptedException {
         // 将消息写入内存和硬盘上
         // deliverMode == 1 不持久化 2 持久化
         if(message.getDeliverMode() == 2){
