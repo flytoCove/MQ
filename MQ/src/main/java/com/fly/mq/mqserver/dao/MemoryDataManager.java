@@ -172,7 +172,7 @@ public class MemoryDataManager {
         }
 
         messageMap.remove(messageId);
-
+        System.out.println("[MemoryDataManager] delete message wait ack: " + messageId);
     }
     // 获取指定未确认消息
     public Message pollMessageWaitAck(String queueName, String messageId) {

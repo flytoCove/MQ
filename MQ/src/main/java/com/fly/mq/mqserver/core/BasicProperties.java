@@ -11,5 +11,5 @@ public class BasicProperties implements Serializable {
     // 用来和 bindingKey 进行匹配
     private String routingKey;
     // 表示消息是否持久化 1 表示 否 2 表示 是
-    private int deliverMode;
+    private int deliverMode = 1;
 }

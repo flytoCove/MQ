@@ -62,7 +62,7 @@ public class ConsumerManager {
         if(queue == null){
             throw new MQException("[ConsumerManager] Queue not found queueName = " + queueName);
         }
-        ConsumerEnv consumerEnv = new ConsumerEnv();
+        ConsumerEnv consumerEnv = new ConsumerEnv(consumerTag, queueName, autoAck, consumer);
         synchronized (queue){
             queue.addConsumerEnv(consumerEnv);
             // 此时如果队列中有消息 需要立即消费
@@ -97,7 +97,13 @@ public class ConsumerManager {
                 // 1.把消息放到待确认集合中
                 parent.getMemoryDataManager().addMessageWaitAck(queue.getName(), message);
                 // 2.执行回调
-                luckyOne.getConsumer().handleDelivery(luckyOne.getConsumerTag(), message.getBasicProperties(), message.getBody());
+                try{
+                    luckyOne.getConsumer().handleDelivery(luckyOne.getConsumerTag(), message.getBasicProperties(), message.getBody());
+                }catch (Exception e){
+                    System.out.println("[ConsumerManager] Consumer handleDelivery threw exception");
+                    e.printStackTrace();
+                    return; // 提前退出，不执行后续删除逻辑
+                }
                 // 3.如果 autoAck == true 直接删掉 如果为 false 则需要后续消费者调用 basicAck()
                 if (luckyOne.isAutoAck()) {
                     // 1) 删除硬盘上的消息
@@ -112,6 +118,7 @@ public class ConsumerManager {
                     System.out.println("[ConsumerManager] message is consumed " + luckyOne.getConsumerTag());
                 }
             }catch (Exception e) {
+                System.out.println("[ConsumerManager] Consume message failed");
                 e.printStackTrace();
             }
         });

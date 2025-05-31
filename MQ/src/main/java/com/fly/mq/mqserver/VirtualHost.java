@@ -281,7 +281,7 @@ public class VirtualHost {
 
             }else{
                 // 按照 fanout 和 topic
-                // 找打该交换机关联的所有绑定
+                // 找到该交换机关联的所有绑定
                 ConcurrentHashMap<String, Binding> bindings = memoryDataManager.getBindings(exchangeName);
                 for (Map.Entry<String, Binding> entry : bindings.entrySet()) {
                     // 1） 获取到绑定对象 判断对应的队列是否存在
@@ -294,7 +294,7 @@ public class VirtualHost {
                     }
 
                     // 构造消息对象
-                    Message message = Message.createMessageById(binding.getBindingKey(),basicProperties,data);
+                    Message message = Message.createMessageById(routingKey,basicProperties,data);
                     // 判断此消息是否要发送到该队列
                     // 1) fanout 所有绑定的队列都需要转发
                     // 2) topic 还需要判断 bindingKey 和 routingKey 是否匹配
