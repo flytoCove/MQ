@@ -7,6 +7,9 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,12 +41,17 @@ public class BrokerServer {
     public void start() throws IOException {
         System.out.println("[Starting BrokerServer]");
         executorService = Executors.newCachedThreadPool();
-        while (runnable) {
-            Socket clientAccept = serverSocket.accept();
-            // 处理连接的逻辑丢给线程池
-            executorService.submit(() -> {
-                processConnection(clientAccept);
-            });
+        try {
+            while (runnable) {
+                Socket clientAccept = serverSocket.accept();
+                // 处理连接的逻辑丢给线程池
+                executorService.submit(() -> {
+                    processConnection(clientAccept);
+                });
+            }
+        } catch (SocketException e) {
+            System.out.println("[BrokerServer] 服务器停止运行");
+            // e.printStackTrace();
         }
     }
 
@@ -61,7 +69,7 @@ public class BrokerServer {
     private void processConnection(Socket clientAccept) {
         try (InputStream inputStream = clientAccept.getInputStream();
              OutputStream outputStream = clientAccept.getOutputStream()) {
-            try (DataInputStream dataInputStream = new DataInputStream(clientAccept.getInputStream());
+            try (DataInputStream dataInputStream = new DataInputStream(inputStream);
                  DataOutputStream dataOutputStream = new DataOutputStream(outputStream)) {
                 while (true) {
                     // 1.读取请求并解析
@@ -77,8 +85,8 @@ public class BrokerServer {
                 System.out.println("[BrokerServer] connection closed by client IP: " + clientAccept.getInetAddress() + "Port: " + clientAccept.getPort());
             }
 
-        } catch (Exception e) {
-            System.out.println("[BrokerServer] connection Error");
+        } catch (IOException | ClassNotFoundException | MQException e) {
+            System.out.println("[BrokerServer] connection Exception");
             e.printStackTrace();
         } finally {
             try {
@@ -99,10 +107,11 @@ public class BrokerServer {
             request.setLength(dataInputStream.readInt());
             byte[] payload = new byte[request.getLength()];
             dataInputStream.readFully(payload);
+
             request.setPayload(payload);
             return request;
-        } catch (Exception e) {
-            throw new IOException(e.getMessage());
+        }catch (EOFException e){
+            throw new IOException("读取请求数据出错!");
         }
     }
 
@@ -114,54 +123,45 @@ public class BrokerServer {
     }
 
     private Response process(Request request, Socket clientAccept) throws IOException, ClassNotFoundException {
-        // 把 Request 中的数据做初步解析
-        BasicArguments basicArguments = (BasicArguments) BinaryTool.fromBytes(request.getPayload());
-        System.out.println("[Request] rid: " + basicArguments.getRid() + " channelId: " + basicArguments.getChannelId() + " type: "
-                + request.getType() + "length: " + request.getLength());
+        // 1.把 Request 中的数据做初步解析
+        BaseArguments baseArguments = (BaseArguments) BinaryTool.fromBytes(request.getPayload());
+        System.out.println("[Request] rid: " + baseArguments.getRid() + " channelId: " + baseArguments.getChannelId() + " type: "
+                + request.getType() + " length: " + request.getLength());
 
-        // 根据 type 进行具体要做什么
+        // 2.根据 type 进行具体要做什么
         boolean ok = true;
         if (request.getType() == 0x1) {
-            sessions.put(basicArguments.getChannelId(), clientAccept);
-            System.out.println("[BrokerServer] create channel success channelId: " + basicArguments.getChannelId());
-        }
-        else if (request.getType() == 0x2) {
-            sessions.remove(basicArguments.getChannelId());
-            System.out.println("[BrokerServer] remove channel success channelId: " + basicArguments.getChannelId());
-        }
-        else if (request.getType() == 0x3) {
+            sessions.put(baseArguments.getChannelId(), clientAccept);
+            System.out.println("[BrokerServer] create channel success channelId: " + baseArguments.getChannelId());
+        } else if (request.getType() == 0x2) {
+            sessions.remove(baseArguments.getChannelId());
+            System.out.println("[BrokerServer] remove channel success channelId: " + baseArguments.getChannelId());
+        } else if (request.getType() == 0x3) {
             // 0x3 创建交换机 说明 payload 是一个 ExchangeDeclareArguments 对象
-            ExchangeDeclareArguments arguments = (ExchangeDeclareArguments) basicArguments;
+            ExchangeDeclareArguments arguments = (ExchangeDeclareArguments) baseArguments;
             ok = virtualHost.exchangeDeclare(arguments.getExchangeName(), arguments.getExchangeType(),
                     arguments.isDurable(), arguments.isAutoDelete(), arguments.getArguments());
-        }
-        else if (request.getType() == 0x4) {
-            ExchangeDeleteArguments arguments = (ExchangeDeleteArguments) basicArguments;
+        } else if (request.getType() == 0x4) {
+            ExchangeDeleteArguments arguments = (ExchangeDeleteArguments) baseArguments;
             ok = virtualHost.exchangeDelete(arguments.getExchangeName());
-        }
-        else if (request.getType() == 0x5) {
-            QueueDeclareArguments arguments = (QueueDeclareArguments) basicArguments;
+        } else if (request.getType() == 0x5) {
+            QueueDeclareArguments arguments = (QueueDeclareArguments) baseArguments;
             ok = virtualHost.queueDeclare(arguments.getQueueName(), arguments.isDurable(), arguments.isExclusive(),
                     arguments.isAutoDelete(), arguments.getArguments());
-        }
-        else if (request.getType() == 0x6) {
-            QueueDeleteArguments arguments = (QueueDeleteArguments) basicArguments;
+        } else if (request.getType() == 0x6) {
+            QueueDeleteArguments arguments = (QueueDeleteArguments) baseArguments;
             ok = virtualHost.queueDelete(arguments.getQueueName());
-        }
-        else if (request.getType() == 0x7) {
-            QueueBindArguments arguments = (QueueBindArguments) basicArguments;
+        } else if (request.getType() == 0x7) {
+            QueueBindArguments arguments = (QueueBindArguments) baseArguments;
             ok = virtualHost.queueBind(arguments.getExchangeName(), arguments.getQueueName(), arguments.getBindingKey());
-        }
-        else if (request.getType() == 0x8) {
-            QueueUnBindArguments arguments = (QueueUnBindArguments) basicArguments;
+        } else if (request.getType() == 0x8) {
+            QueueUnBindArguments arguments = (QueueUnBindArguments) baseArguments;
             ok = virtualHost.queueUnbind(arguments.getExchangeName(), arguments.getQueueName());
-        }
-        else if (request.getType() == 0x9) {
-            BasicPublishArguments arguments = (BasicPublishArguments) basicArguments;
+        } else if (request.getType() == 0x9) {
+            BasicPublishArguments arguments = (BasicPublishArguments) baseArguments;
             ok = virtualHost.basicPublish(arguments.getExchangeName(), arguments.getRoutingKey(), arguments.getBasicProperties(), arguments.getBody());
-        }
-        else if (request.getType() == 0xa) {
-            BasicConsumeArguments arguments = (BasicConsumeArguments) basicArguments;
+        } else if (request.getType() == 0xa) {
+            BasicConsumeArguments arguments = (BasicConsumeArguments) baseArguments;
             virtualHost.basicConsume(arguments.getConsumerTag(), arguments.getQueueName(), arguments.isAutoAck(), new Consumer() {
                 @Override
                 public void handleDelivery(String consumerTag, BasicProperties basicProperties, byte[] body) throws IOException {
@@ -171,7 +171,7 @@ public class BrokerServer {
 
                     // 1.找到 socket 对象
                     Socket clientSocket = sessions.get(consumerTag);
-                    if(clientSocket == null || clientSocket.isConnected()) {
+                    if (clientSocket == null || clientSocket.isConnected()) {
                         System.out.println("[BrokerServer] connection closed");
                     }
 
@@ -200,14 +200,43 @@ public class BrokerServer {
                     writeResponse(dataOutputStream, response);
                 }
             });
-
+        } else if (request.getType() == 0xb) {
+            BasicAckArguments arguments = (BasicAckArguments) baseArguments;
+            ok = virtualHost.basicAck(arguments.getQueueName(), arguments.getMessageId());
+        } else {
+            throw new MQException("[BrokerServer] Unknown request type: " + request.getType());
         }
 
-        return null;
+        // 3.构造响应
+        BaseReturns baseReturns = new BaseReturns();
+        baseReturns.setChannelId(baseArguments.getChannelId());
+        baseReturns.setRid(baseArguments.getRid());
+        baseReturns.setOk(ok);
+
+        byte[] payload = BinaryTool.toBytes(baseReturns);
+        Response response = new Response();
+        response.setType(request.getType());
+        response.setLength(payload.length);
+        response.setPayload(payload);
+        return response;
     }
 
 
     private void clearClosedSession(Socket clientAccept) {
+        // 如果 socket 异常关闭了 sessions 里存的逻辑上的 channel 也就没意义了 这里就清理掉
+        // 这里用来暂时存储需要删除的 channelId
+        List<String> toDelete = new ArrayList<>();
+        for (Map.Entry<String, Socket> entry : sessions.entrySet()) {
+            // 不能在遍历的同时直接调用 remove 删除会导致迭代器失效
+            // sessions.remove(entry.getValue())
+            if (entry.getValue() == clientAccept) {
+                toDelete.add(entry.getKey());
+            }
+        }
+        for (String channelId : toDelete) {
+            sessions.remove(channelId);
+        }
+        System.out.println("[BrokerServer] clear channel completed " + toDelete);
     }
 
 }

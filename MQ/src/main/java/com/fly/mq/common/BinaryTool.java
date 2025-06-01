@@ -31,4 +31,16 @@ public class BinaryTool {
         }
         return object;
     }
+
+    public static String bytesToHex(byte[] bytes) {
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            String hex = Integer.toHexString(0xff & b); // 转换为无符号十六进制
+            if (hex.length() == 1) {
+                hexString.append('0'); // 补零
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
 }

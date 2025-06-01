@@ -6,6 +6,6 @@ import lombok.Setter;
 import java.io.Serializable;
 @Getter
 @Setter
-public class ExchangeDeleteArguments extends BasicArguments implements Serializable {
+public class ExchangeDeleteArguments extends BaseArguments implements Serializable {
     private String exchangeName;
 }

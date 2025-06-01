@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 @Getter
 @Setter
-public class SubScribeReturns extends BasicReturns implements Serializable {
+public class SubScribeReturns extends BaseReturns implements Serializable {
     private String consumerTag;
     private BasicProperties properties;
     private byte[] body;

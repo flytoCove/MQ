@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Getter
 @Setter
-public class QueueDeclareArguments extends BasicArguments implements Serializable {
+public class QueueDeclareArguments extends BaseArguments implements Serializable {
     private String queueName;
     private boolean durable;
     private boolean exclusive;

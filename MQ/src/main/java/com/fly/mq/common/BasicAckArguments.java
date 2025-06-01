@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 @Getter
 @Setter
-public class BasicAckArguments extends BasicArguments implements Serializable {
+public class BasicAckArguments extends BaseArguments implements Serializable {
     private String queueName;
     private String messageId;
 }

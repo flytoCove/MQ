@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 @Getter
 @Setter
-public class QueueUnBindArguments extends BasicArguments implements Serializable {
+public class QueueUnBindArguments extends BaseArguments implements Serializable {
     private String queueName;
     private String exchangeName;
 }

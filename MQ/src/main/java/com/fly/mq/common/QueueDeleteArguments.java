@@ -7,6 +7,6 @@ import java.io.Serializable;
 
 @Getter
 @Setter
-public class QueueDeleteArguments extends BasicArguments implements Serializable {
+public class QueueDeleteArguments extends BaseArguments implements Serializable {
     private String queueName;
 }
