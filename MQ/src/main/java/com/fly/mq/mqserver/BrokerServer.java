@@ -82,7 +82,7 @@ public class BrokerServer {
             } catch (EOFException | SocketException e) {
                 //DataInputStream 读到 EOF(文件结尾) 会抛出 EOFException 异常
                 // 这里借助这个异常退出循环
-                System.out.println("[BrokerServer] connection closed by client IP: " + clientAccept.getInetAddress() + "Port: " + clientAccept.getPort());
+                System.out.println("[BrokerServer] connection closed by client IP: " + clientAccept.getInetAddress().toString() + ":" + clientAccept.getPort());
             }
 
         } catch (IOException | ClassNotFoundException | MQException e) {
@@ -101,18 +101,16 @@ public class BrokerServer {
 
 
     private Request readRequest(DataInputStream dataInputStream) throws IOException {
-        try {
-            Request request = new Request();
-            request.setType(dataInputStream.readInt());
-            request.setLength(dataInputStream.readInt());
-            byte[] payload = new byte[request.getLength()];
-            dataInputStream.readFully(payload);
-
-            request.setPayload(payload);
-            return request;
-        }catch (EOFException e){
-            throw new IOException("读取请求数据出错!");
+        Request request = new Request();
+        request.setType(dataInputStream.readInt());
+        request.setLength(dataInputStream.readInt());
+        byte[] payload = new byte[request.getLength()];
+        int n = dataInputStream.read(payload);
+        if (n != request.getLength()) {
+            throw new IOException("读取请求格式出错!");
         }
+        request.setPayload(payload);
+        return request;
     }
 
     private void writeResponse(DataOutputStream dataOutputStream, Response response) throws IOException {

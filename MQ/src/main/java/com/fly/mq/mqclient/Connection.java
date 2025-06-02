@@ -77,6 +77,7 @@ public class Connection {
             callbackExecutor.submit(() -> {
                 try {
                     channel.getConsumer().handleDelivery(scribeReturns.getConsumerTag(),scribeReturns.getProperties(),scribeReturns.getBody());
+                    //channel.getConsumerMap().get(scribeReturns.getConsumerTag()).handleDelivery(scribeReturns.getConsumerTag(),scribeReturns.getProperties(),scribeReturns.getBody());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

@@ -118,7 +118,8 @@ public class VirtualHost {
                 // 1.判断队列是否存在
                 MSGQueue existsQueue = memoryDataManager.getQueue(queueName);
                 if (existsQueue != null) {
-                    throw new MQException("[VirtualHost] Queue " + queueName + " already exists");
+                    System.out.println("[VirtualHost] Queue " + queueName + " already exists");
+                    return true;
                 }
 
                 MSGQueue queue = new MSGQueue();
@@ -226,16 +227,6 @@ public class VirtualHost {
                     if (binding == null) {
                         throw new MQException("[VirtualHost] Binding " + queueName + " does not exist");
                     }
-
-                    // 获取队列和交换机是否存在
-//            MSGQueue queue = memoryDataManager.getQueue(queueName);
-//            if(queue == null){
-//                throw new MQException("[VirtualHost] Queue " + queueName + " does not exist");
-//            }
-//            Exchange exchange = memoryDataManager.getExchange(exchangeName);
-//            if(exchange == null){
-//                throw new MQException("[VirtualHost] Exchange " + exchangeName + " does not exist");
-//            }
 
                     // 无论是否持久化都删除一次
                     diskDataManager.deleteBinding(binding);

@@ -21,6 +21,7 @@ public class Channel {
     private ConcurrentHashMap<String, BaseReturns> basicReturnsMap = new ConcurrentHashMap<>();
     // 消费者的回调. 对于消息响应, 调用这个回调处理消息
     private Consumer consumer;
+    //private final ConcurrentHashMap<String, Consumer> consumerMap = new ConcurrentHashMap<>();
 
     public Channel(String channelId, Connection connection) {
         this.channelId = channelId;
@@ -252,10 +253,16 @@ public class Channel {
     // 订阅消息
     public boolean basicConsume(String queueName,boolean autoAck, Consumer consumer) throws MQException, IOException {
         // 先设置回调
-        if(consumer != null) {
+        if(this.consumer != null) {
             throw new MQException("[basicConsume] consumer is already set");
         }
         this.consumer = consumer;
+//        String consumerTag = "CT-" + UUID.randomUUID().toString();
+//        // 存储消费者（按consumerTag存储）
+//        if (consumerMap.putIfAbsent(consumerTag, consumer) != null) {
+//            throw new MQException("Duplicate consumerTag: " + consumerTag);
+//        }
+
         BasicConsumeArguments basicConsumeArguments = new BasicConsumeArguments();
         basicConsumeArguments.setRid(generateRid());
         basicConsumeArguments.setChannelId(channelId);
